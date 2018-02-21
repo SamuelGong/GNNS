@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/gnns.dir/main.cpp.o CMakeFiles/gnns.dir/read_write.cpp.o  -o gnns -Wl,-rpath,/home/samuelgong/Share/code/gnns/cpu/1.0 libREAD_WRITE.so 

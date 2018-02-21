@@ -1,0 +1,3 @@
+file(REMOVE_RECURSE
+  "libREAD_WRITE.a"
+)
