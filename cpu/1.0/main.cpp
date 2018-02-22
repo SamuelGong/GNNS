@@ -3,7 +3,6 @@
 #include <knn.h>
 #include <serve.h>
 #include <evaluate.h>
-#include <path.h>
 #include <iostream>
 #include <ctime>
 
