@@ -9,6 +9,8 @@
 /home/samuelgong/Share/code/gnns/cpu/1.0/evaluate.cpp
 evaluate.h
 -
+iostream
+-
 
 /home/samuelgong/Share/code/gnns/cpu/1.0/main.cpp
 read_write.h
@@ -22,6 +24,8 @@ serve.h
 evaluate.h
 -
 iostream
+-
+iomanip
 -
 
 include/distance.h
@@ -37,7 +41,13 @@ vector
 -
 
 include/knn.h
+setting.h
+-
 distance.h
+-
+unistd.h
+-
+fstream
 -
 
 include/read_write.h

@@ -4,6 +4,7 @@
 #include <serve.h>
 #include <evaluate.h>
 #include <iostream>
+#include <iomanip>
 
 using namespace GNNS;
 
@@ -28,7 +29,7 @@ int main(){
     vector<vector<int>> ground = read_file<int>(GROUND_FILE);
     std::cout << "Evaluating the result..." << std::endl;
     float prec = evaluate(result, ground);
-    std::cout << "Precision: " << prec << std::endl;
+    std::cout << "Precision: " << prec * 100.0 << "%" << std::endl;
 
     return 0;
 }

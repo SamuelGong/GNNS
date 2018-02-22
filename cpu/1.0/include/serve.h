@@ -17,41 +17,47 @@ namespace GNNS {
         int query_size = query.size();
         vector<vector<int>> * result = new vector<vector<int>>();
 
+        srand((unsigned)time(0));
         for ( int ri = 0; ri < query_size; ri ++){
             std::printf("%.2f %%\r", 100.0 * ri / query_size);
-            vector<pair<int, float>> candidates;
+            std::cout << std::flush;
 
+            vector<pair<int, float>> candidates;
             for ( int i = 0; i < r; i++ ){
-                srand((unsigned)time(0));
                 int index = rand() % num;
 
                 for ( int j = 0; j < s; j++ ){
-                    float dist;
-                    float minDist = kNN_Graph.at(index).at(0).second;
+                    float tmp_dist;
+                    float tmp_index;
                     float minIndex = kNN_Graph.at(index).at(0).first;
+                    float minDist = Euclidean<float>(query.at(ri), 
+                        base.at(minIndex)).get();
                     
                     for ( int h = 1;  h < e; h++ ){
-                        dist = kNN_Graph.at(index).at(h).second;
-                        if (dist < minDist){
-                            minDist = dist;
-                            minIndex = h;
+                        tmp_index = kNN_Graph.at(index).at(h).first;
+                        tmp_dist = Euclidean<float>(query.at(ri), 
+                            base.at(tmp_index)).get();
+                        if (tmp_dist < minDist){
+                            minDist = tmp_dist;
+                            minIndex = tmp_index;
                         }
                     }
 
                     index = minIndex;
-                    pair<int, float> new_candidate = std::make_pair(index, 
-                        Euclidean<float>(query.at(ri), base.at(index)).get());
+                    pair<int, float> new_candidate = std::make_pair(index, minDist);  
                     candidates.push_back(new_candidate);
                 }
             }
-
+            
             std::sort(candidates.begin(), candidates.end(), cmp);
             vector<pair<int,float>>::iterator it = candidates.begin();
             int count = 0;
             int temp = (*it).first;
+
             for( ; it != candidates.end(); ){
                 if ( count == 0 ){
-                    count = 1;
+                    ++count;
+                    ++it;
                     continue;
                 }
                 else if ( count == k )
@@ -64,6 +70,7 @@ namespace GNNS {
                     ++it;
                 }
             }
+            // std::cout << candidates.size() << std::endl;
 
             vector<int> new_result;
             for( int i = 0; i < k; i++ )

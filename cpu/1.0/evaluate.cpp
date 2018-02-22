@@ -1,4 +1,5 @@
 #include <evaluate.h>
+#include <iostream>
 
 namespace GNNS {
     float evaluate(vector<vector<int>> result, vector<vector<int>> truth){
