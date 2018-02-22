@@ -5,7 +5,7 @@
 using std::vector;
 
 namespace GNNS {
-    float evaluate(vector<vector<int>>, vector<vector<int>>);
+	float evaluate(vector<vector<int>>, vector<vector<int>>);
 }
 
 #endif
