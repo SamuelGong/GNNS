@@ -5,11 +5,13 @@
 #include <evaluate.h>
 #include <iostream>
 #include <iomanip>
+#include <ctime>
 
 using namespace GNNS;
 
 int main(){
-    
+    time_t start, end;
+
     // read the file
     std::cout << "Reading base file..." << std::endl;
     vector<vector<float>> base = read_file<float>(BASE_FILE);
@@ -22,7 +24,9 @@ int main(){
 
     // serve the queries
     std::cout << "Serving the queries..." << std::endl;
+    start = clock();
     vector<vector<int>> result = serve<float>(base, query, kNN_Graph, K, R, S, E);
+    end = clock();
 
     // evaluate the result
     std::cout << "Reading ground_truth file..." << std::endl;
@@ -30,6 +34,7 @@ int main(){
     std::cout << "Evaluating the result..." << std::endl;
     float prec = evaluate(result, ground);
     std::cout << "Precision: " << prec * 100.0 << "%" << std::endl;
+    std::cout << "Timing: " << (double)(end- start) / CLOCKS_PER_SEC << " second" << std::endl;
 
     return 0;
 }

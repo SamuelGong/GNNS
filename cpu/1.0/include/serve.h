@@ -37,6 +37,8 @@ namespace GNNS {
                         tmp_index = kNN_Graph.at(index).at(h).first;
                         tmp_dist = Euclidean<float>(query.at(ri), 
                             base.at(tmp_index)).get();
+                        pair<int, float> new_candidate = std::make_pair(tmp_index, tmp_dist);  
+                        candidates.push_back(new_candidate);
                         if (tmp_dist < minDist){
                             minDist = tmp_dist;
                             minIndex = tmp_index;
@@ -44,13 +46,12 @@ namespace GNNS {
                     }
 
                     index = minIndex;
-                    pair<int, float> new_candidate = std::make_pair(index, minDist);  
-                    candidates.push_back(new_candidate);
                 }
             }
             
             std::sort(candidates.begin(), candidates.end(), cmp);
             vector<pair<int,float>>::iterator it = candidates.begin();
+
             int count = 0;
             int temp = (*it).first;
 
