@@ -2,7 +2,7 @@
 #include <iostream>
 
 namespace GNNS {
-	float evaluate(vector<vector<int>> result, vector<vector<int>> truth) {
+	float evaluate(vector<vector<int>> & result, vector<vector<int>> & truth) {
 		int num = result.size();
 		int dim = result.at(0).size();
 		int count = 0;

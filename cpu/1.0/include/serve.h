@@ -8,9 +8,9 @@
 namespace GNNS {
 	template <typename T>
 	vector<vector<int>>
-		serve(vector<vector<T>> base,
-			vector<vector<T>> query,
-			vector<vector<pair<int, float>>> kNN_Graph,
+		serve(vector<vector<T>> & base,
+			vector<vector<T>> & query,
+			vector<vector<int>> & kNN_Graph,
 			int k, int r, int s, int e) {
 		pair_less cmp;
 		int num = base.size();
@@ -29,12 +29,12 @@ namespace GNNS {
 				for (int j = 0; j < s; j++) {
 					float tmp_dist;
 					float tmp_index;
-					float minIndex = kNN_Graph.at(index).at(0).first;
+					float minIndex = kNN_Graph.at(index).at(0);
 					float minDist = Euclidean<float>(query.at(ri),
 						base.at(minIndex)).get();
 
 					for (int h = 1; h < e; h++) {
-						tmp_index = kNN_Graph.at(index).at(h).first;
+						tmp_index = kNN_Graph.at(index).at(h);
 						tmp_dist = Euclidean<float>(query.at(ri),
 							base.at(tmp_index)).get();
 						pair<int, float> new_candidate = std::make_pair(tmp_index, tmp_dist);

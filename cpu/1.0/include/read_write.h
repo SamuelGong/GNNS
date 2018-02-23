@@ -23,7 +23,7 @@ namespace GNNS {
 	}
 
 	template <typename T>
-	vector<vector<T>> & read_file(const char* path) {
+	vector<vector<T>> & read_file(const char * path) {
 
 		FILE *fp;
 		if ((fp = fopen(path, "rb")) == nullptr) {

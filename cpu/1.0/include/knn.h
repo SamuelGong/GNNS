@@ -6,20 +6,23 @@
 #include <io.h>
 #include <process.h>
 #include <fstream>
+#include <ctime>
 
 namespace GNNS {
 	template <typename T>
-	vector<vector<pair<int, float>>> & build_kNN_Graph(vector<vector<T>> base, int k) {
+	vector<vector<int>> & build_kNN_Graph(vector<vector<T>> & base, int k) {
 
 		if (_access(GRAPH_FILE, 0) == 0) {
-			return read_file<pair<int, float>>(GRAPH_FILE);
+			return read_file<int>(GRAPH_FILE);
 		}
 
 		pair_less cmp;
+		time_t start, end;
 		int num = base.size();
 		float * dist_set = new float[num*num];
-		vector<vector<pair<int, float>>> * result = new vector<vector<pair<int, float>>>();
+		vector<vector<int>> * result = new vector<vector<int>>();
 
+		start = clock();
 		for (int i = 0; i < num; i++) {
 			std::printf("%.2f %%\r", 100.0 * i / num);
 			std::cout << std::flush;
@@ -37,15 +40,17 @@ namespace GNNS {
 			}
 
 			std::sort(pairs_for_a_vertex.begin(), pairs_for_a_vertex.end(), cmp);
-			vector<pair<int, float>> neighbors_for_a_vertex;
+			vector<int> neighbors_for_a_vertex;
 			for (int j = 1; j <= k; j++) {
-				neighbors_for_a_vertex.push_back(pairs_for_a_vertex.at(j));
+				neighbors_for_a_vertex.push_back(pairs_for_a_vertex.at(j).first);
 			}
 			result->push_back(neighbors_for_a_vertex);
 		}
+		end = clock();
+		std::cout << std::endl << "Time for building the graph: " 
+			<< (double)(end - start) / CLOCKS_PER_SEC << " second" << std::endl;
 
-		std::cout << std::endl;
-		write_file<pair<int, float>>(GRAPH_FILE, *result);
+		write_file<int>(GRAPH_FILE, *result);
 		return *result;
 	}
 }
