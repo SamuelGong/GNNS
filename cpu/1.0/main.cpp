@@ -15,6 +15,8 @@ int main() {
 	
 	// read the file
 	start_all = clock();
+	std::cout << "Reading the settings..." << std::endl;
+	setting();
 	std::cout << "Reading base file..." << std::endl;
 	vector<vector<float>> base = read_file<float>(BASE_FILE);
 	

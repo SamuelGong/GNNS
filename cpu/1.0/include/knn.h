@@ -12,7 +12,7 @@ namespace GNNS {
 	template <typename T>
 	vector<vector<int>> & build_kNN_Graph(vector<vector<T>> & base, int k) {
 
-		if (_access(GRAPH_FILE, 0) == 0) {
+		if (_access(GRAPH_FILE.c_str(), 0) == 0) {
 			return read_file<int>(GRAPH_FILE);
 		}
 

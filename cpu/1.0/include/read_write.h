@@ -4,10 +4,12 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <string>
 #include <io.h>
 #include <process.h>
 
 using std::vector;
+using std::string;
 
 namespace GNNS {
 	void le_read(long buffer, size_t size, size_t count, FILE * stream) {
@@ -23,10 +25,10 @@ namespace GNNS {
 	}
 
 	template <typename T>
-	vector<vector<T>> & read_file(const char * path) {
+	vector<vector<T>> & read_file(string path) {
 
 		FILE *fp;
-		if ((fp = fopen(path, "rb")) == nullptr) {
+		if ((fp = fopen(path.c_str(), "rb")) == nullptr) {
 			std::cout << "File open error!" << std::endl;
 			exit(-1);
 		}
@@ -54,9 +56,9 @@ namespace GNNS {
 	}
 
 	template <typename T>
-	void write_file(const char* path, const vector<vector<T>> & source) {
+	void write_file(string path, const vector<vector<T>> & source) {
 		FILE *fp;
-		if ((fp = fopen(path, "wb")) == nullptr) {
+		if ((fp = fopen(path.c_str(), "wb")) == nullptr) {
 			std::cout << "File open error!" << std::endl;
 			exit(-1);
 		}
