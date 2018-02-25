@@ -1,0 +1,19 @@
+Path for base file:../../data/sift/siftsmall/siftsmall_base.fvecs
+
+Path for query file:../../data/sift/siftsmall/siftsmall_query.fvecs
+
+Path for ground truth file:../../data/sift/siftsmall/siftsmall_groundtruth.ivecs
+
+Path for kNN graph file(if exist):./bin/graph
+
+k for k-NN graph (k):1000
+
+Number of required nearest neighbors (K):10
+
+Number of ramdon starts (R):1
+
+Number of greedy steps (T):8
+
+Number of expansions (E < k):1000
+
+
