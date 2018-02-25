@@ -12,18 +12,6 @@ using std::vector;
 using std::string;
 
 namespace GNNS {
-	void le_read(long buffer, size_t size, size_t count, FILE * stream) {
-		for (int i = 0; i < count; i++)
-			for (int j = 0; j < size; j++)
-				fread((void*)(buffer + i*size + j), 1, 1, stream);
-	} 
-
-	void le_write(const long buffer, size_t size, size_t count, FILE * stream) {
-		for (int i = 0; i < count; i++)
-			for (int j = 0; j < size; j++)
-				fwrite((const void*)(buffer + i*size + j), 1, 1, stream);
-	}
-
 	template <typename T>
 	vector<vector<T>> & read_file(string path) {
 
@@ -37,15 +25,14 @@ namespace GNNS {
 		int dim;
 		vector<vector<T>> * result = new vector<vector<T>>();
 		
-		int flag = 0;
 		while (true) {
 			vector<T> element; 
-			le_read(long(&dim), sizeof(int), 1, fp);
+			fread(&dim, sizeof(int), 1, fp);
 			if (feof(fp))
 				break;
 
 			for (int j = 0; j < dim; j++) {
-				le_read(long(&temp), sizeof(T), 1, fp);
+				fread(&temp, sizeof(T), 1, fp);
 				element.push_back(temp);
 			}
 			result->push_back(element);
@@ -68,10 +55,12 @@ namespace GNNS {
 
 		for (int i = 0; i < num; i++) {
 			dim = source.at(i).size();
-			le_write(long(&dim), sizeof(int), 1, fp);
+			fwrite(&dim, sizeof(int), 1, fp);
 			for (int j = 0; j < dim; j++)
-				le_write(long(&(source.at(i).at(j))), sizeof(T), 1, fp);
+				fwrite(&(source.at(i).at(j)), sizeof(T), 1, fp);
 		}
+			
+		fclose(fp);
 	}
 
 }

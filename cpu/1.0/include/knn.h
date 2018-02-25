@@ -32,7 +32,7 @@ namespace GNNS {
 					dist_set[i*num + j] == 0;
 				else
 					dist_set[i*num + j] = dist_set[j*num + i] = Euclidean<T>(base.at(i), base.at(j)).get();
-
+			
 			vector<pair<int, float>> pairs_for_a_vertex;
 			for (int j = 0; j < num; j++) {
 				pair<int, float> new_pair = std::make_pair(j, dist_set[i*num + j]);
