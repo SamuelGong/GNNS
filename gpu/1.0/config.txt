@@ -10,7 +10,7 @@ k for k-NN graph (k):1000
 
 Number of required nearest neighbors (K):10
 
-Number of ramdon starts (R):1
+Number of ramdon starts (R):4
 
 Number of greedy steps (T):8
 

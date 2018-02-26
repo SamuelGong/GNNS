@@ -74,8 +74,9 @@ namespace GNNS {
 			// std::cout << candidates.size() << std::endl;
 
 			vector<int> new_result;
-			for (int i = 0; i < k; i++)
+			for (int i = 0; i < k; i++) {
 				new_result.push_back(candidates.at(i).first);
+			}
 			result->push_back(new_result);
 		}
 

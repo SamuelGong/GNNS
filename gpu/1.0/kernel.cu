@@ -166,11 +166,11 @@ namespace GNNS {
 	serve_kernel(float * base, float * query, int * graph, int * result,
 		int * ri, int * e, int * s, int * k, int * r, float * dist, int * index) {
 
-		int vertex = *ri * 16 + blockIdx.x;
+		//int vertex = *ri * 16 + blockIdx.x;
 		int start = threadIdx.x;
 		
 		curandState_t state;
-		curand_init(vertex * start, 0, 0, &state);
+		curand_init(*ri * (start+1), 0, 0, &state);
 		
 		int i, j;
 		int no = curand(&state) % 10000;
@@ -184,14 +184,16 @@ namespace GNNS {
 		int temp;
 
 		for (i = 0; i < *s; i++) {
-			min_no = graph[1000 * no];
-			min_dist = Euclidean(&base[vertex * 128], &base[no * 128], 128);
-			for (j = 1; j < *e; j++) {
+			for (j = 0; j < *e; j++) {
 				temp_no = graph[1000 * no + j];
-				temp_dist = Euclidean(&base[vertex * 128], &base[temp_no * 128], 128);
-				index[*s * *e * *r * vertex + *s * *e * start + i * *e + j] = temp_no;
-				dist[*s * *e * *r * vertex + *s * *e * start + i * *e + j]
-					= temp_dist;
+				temp_dist = Euclidean(query, &base[temp_no * 128], 128);
+				index[*s * *e * start + i * *e + j] = temp_no;
+				dist[*s * *e * start + i * *e + j] = temp_dist;
+				if (j == 0) {
+					min_no = temp_no;
+					min_dist = temp_dist;
+					continue;
+				}
 				if (temp_dist < min_dist) {
 					min_dist = temp_dist;
 					min_no = temp_no;
@@ -202,9 +204,11 @@ namespace GNNS {
 
 		__syncthreads();
 		if (threadIdx.x == 0) {
-			table_sort(&dist[vertex * *e * start], &index[vertex * *e * *s], *e * start);
-			while (iter != *e * start) {
+			table_sort(dist, index, *e * *r * *s);
+			while (iter != *e * *r * *s) {
 				if (count == 0) {
+					temp = index[iter];
+					result[count] = temp;
 					++count;
 					++iter;
 					continue;
@@ -216,7 +220,7 @@ namespace GNNS {
 				}
 				else {
 					temp = index[iter];
-					result[vertex * *k + count] = temp;
+					result[count] = temp;
 					++count;
 					++iter;
 				}
@@ -229,7 +233,7 @@ namespace GNNS {
 
 		Vectors<int> * result = new Vectors<int>();
 		result->dim = k;
-		result->num = base.num;
+		result->num = query.num;
 		result->data = new int[result->dim * result->num];
 
 		float * dev_base;
@@ -246,15 +250,15 @@ namespace GNNS {
 
 		cudaMalloc((void**)&dev_base, base.num * base.dim * sizeof(float));
 		cudaCheckErrors("Fail to malloc dev_base!");
-		cudaMalloc((void**)&dev_query, 16 * query.dim * sizeof(float));
+		cudaMalloc((void**)&dev_query, query.dim * sizeof(float));
 		cudaCheckErrors("Fail to malloc dev_query!");
-		cudaMalloc((void**)&dev_dist, 16 * e * s * r * sizeof(float));
+		cudaMalloc((void**)&dev_dist, e * s * r * sizeof(float));
 		cudaCheckErrors("Fail to malloc dev_dist!");
 		cudaMalloc((void**)&dev_graph, graph.num * graph.dim * sizeof(int));
 		cudaCheckErrors("Fail to malloc dev_graph!");
-		cudaMalloc((void**)&dev_result, 16 * result->dim * sizeof(int));
+		cudaMalloc((void**)&dev_result, result->dim * sizeof(int));
 		cudaCheckErrors("Fail to malloc dev_result!");
-		cudaMalloc((void**)&dev_index, 16 * e * s * r * sizeof(int));
+		cudaMalloc((void**)&dev_index, e * s * r * sizeof(int));
 		cudaCheckErrors("Fail to malloc dev_index!");
 		cudaMalloc((void**)&dev_i, sizeof(int));
 		cudaMalloc((void**)&dev_e, sizeof(int));
@@ -275,16 +279,16 @@ namespace GNNS {
 		cudaMemcpy(dev_r, &r, sizeof(int), cudaMemcpyHostToDevice);
 		cudaCheckErrors("Fail to memcpy dev_r!");
 
-		for (int i = 0; i < query.num/16; i++) {
+		for (int i = 0; i < query.num; i++) {
 			cudaMemcpy(dev_i, &i, sizeof(int), cudaMemcpyHostToDevice);
 			cudaCheckErrors("Fail to malloc dev_i!");
-			cudaMemcpy(&dev_query[i*query.dim*16], &query.data[i*query.dim * 16], 16 * query.dim * sizeof(float), cudaMemcpyHostToDevice);
+			cudaMemcpy(dev_query, &query.data[i*query.dim], query.dim * sizeof(float), cudaMemcpyHostToDevice);
 			cudaCheckErrors("Fail to memcpy dev_query!");
-			serve_kernel<<<16,r>>>(dev_base, dev_query, dev_graph, dev_result,
+			serve_kernel<<<1,r>>>(dev_base, dev_query, dev_graph, dev_result,
 				dev_i, dev_e, dev_s, dev_k, dev_r, dev_dist, dev_index);
 			cudaCheckErrors("Fail to launch!");
 			cudaDeviceSynchronize();
-			cudaMemcpy(&(result->data[i*result->dim * 16]), &dev_result[i*result->dim*16], 16 * result->dim * sizeof(int), cudaMemcpyDeviceToHost);
+			cudaMemcpy(&(result->data[i*result->dim]), dev_result, result->dim * sizeof(int), cudaMemcpyDeviceToHost);
 			cudaCheckErrors("Fail to memcpy dev_result!");
 		}
 
@@ -300,6 +304,12 @@ namespace GNNS {
 		cudaFree(dev_k);
 		cudaFree(dev_r);
 
+		//for (int i = 0; i < 3; i++) {
+		//	for (int j = 0; j < 10; j++)
+		//		std::printf("%d ", result->data[10*i+j]);
+		//	std::printf("\n");
+		//}
+			
 		return *result;
 	}
 }
