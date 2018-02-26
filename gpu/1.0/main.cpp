@@ -12,7 +12,7 @@ using namespace GNNS;
 int main() {
 	time_t start, end;
 	time_t start_all, end_all;
-
+	
 	// read the file
 	start_all = clock();
 	std::cout << "Reading the settings..." << std::endl;
@@ -29,17 +29,19 @@ int main() {
 	// serve the queries
 	std::cout << "Serving the queries..." << std::endl;
 	start = clock();
-	Vectors<int> result = serve(base, query, kNN_Graph, K, R, S, E);
+	Vectors<int> result = serve(base, query, kNN_Graph, K, K_, R, S, E);
 	end = clock();
 
 	// evaluate the result
 	std::cout << "Reading ground_truth file..." << std::endl;
 	Vectors<int> ground = read_file<int>(GROUND_FILE);
 	std::cout << "Evaluating the result..." << std::endl;
-	float prec = evaluate(result, ground);
+	float prec = evaluate(result, ground, ground.dim);
 
 	end_all = clock();
 	std::cout << "Precision: " << prec * 100.0 << "%" << std::endl;
+	std::cout << "Time for serving the queries: "
+		<< (double)(end - start) / CLOCKS_PER_SEC << " second" << std::endl;
 	std::cout << "Time for the overall process: "
 		<< (double)(end_all - start_all) / CLOCKS_PER_SEC << " second" << std::endl;
 

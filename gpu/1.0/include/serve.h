@@ -3,7 +3,7 @@
 
 namespace GNNS {
 	Vectors<int> & serve(Vectors<float>, Vectors<float>, Vectors<int>, 
-		int, int, int, int);
+		int, int, int, int, int);
 }
 
 #endif

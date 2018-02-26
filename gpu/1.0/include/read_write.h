@@ -51,9 +51,6 @@ namespace GNNS {
 			exit(-1);
 		}
 
-		//for (int i = 0; i < 9; i++)
-		//	std::printf("%d ", source.data[i]);
-
 		int dim = source.dim;
 		int num = source.num;
 		for (int i = 0; i < num; i++) {
