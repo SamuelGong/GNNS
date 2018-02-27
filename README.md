@@ -8,10 +8,6 @@ Benchmark Data Set
 ----
 * [SIFT1M and GIST1M](http://corpus-texmex.irisa.fr/)
 
-Performance
-----
-The performance was tested using data files in directory *siftsmall* of the data set mentioned above.
-
 How to Use
 ----
 + Build by Microsoft Visual Studio after openning project file. `./cpu/1.0/1.0.vcxproj` for CPU version and `./gpu/1.0/1.0.vcxproj` for GPU version.
@@ -38,8 +34,30 @@ Number of ramdon starts (R):4
 Number of greedy steps (T):8
 
 Number of expansions (E < k):1000
-```
+``` 
+where the meaning of the parameters accord with the ones specified in the article.
 
++ Running on some GPUs will fails with a small TDR delay. You might need to change the delay of your device. Learn more in the [user guide](http://docs.nvidia.com/nsight-visual-studio-edition/Nsight_Visual_Studio_Edition_User_Guide.htm#Timeout_Detection_Recovery.htm%3FTocPath%3DReference%7C_____2)
+
++ If everything goes well, running results may look like
+<p><img src="screenshot/result_sample_2.png" width="80%"  /></p>
+
+if you run the project for the first time and have to construct a kNN graph from scratch, or like
+<p><img src="screenshot/result_sample.png" width="80%"  /></p>
+
+if you have already constructed a kNN graph in previous attempts.
+
++ May you enjoy the experience with the project.
+
+Performance
+----
+The performance was tested using data files in directory *siftsmall* of the data set mentioned above.
+
+<p><img src="screenshot/performance.png" width="80%"  /></p>
+
+where R takes the value 1, 2, 4, 8, 16, and k, K, T, E are fixed to be 1000, 10, 8, 200, respectively.
+
+You are welcome to experiment on your own to examine the program.
 
 
 
