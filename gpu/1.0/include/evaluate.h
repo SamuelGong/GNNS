@@ -11,12 +11,9 @@ namespace GNNS {
 		int count = 0;
 
 		for (int i = 0; i < num; i++)
-			for (int j = 0; j < dim; j++) {
-				if (result.data[i*dim + j] == truth.data[i*truth_dim + j]) {
+			for (int j = 0; j < dim; j++)
+				if (result.data[i*dim + j] == truth.data[i*truth_dim + j])
 					count++;
-				}
-				/*else printf("%d %d | ", i, j);*/
-			}
 
 		return 1.0 * count / (num*dim);
 	}

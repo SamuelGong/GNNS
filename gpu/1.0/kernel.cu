@@ -25,16 +25,19 @@
 
 namespace GNNS {
 
-	__device__ float Euclidean(float * a, float * b, unsigned size) {
+	typedef long long sort_t;
+	typedef long long base_t;
+
+	__device__ float Euclidean(float * a, float * b, int size) {
 		float result = 0;
-		for (unsigned i = 0; i < size; i++)
+		for (int i = 0; i < size; i++)
 			result = result + (a[i] - b[i]) * (a[i] - b[i]);
 		return result;
 	}
 
 	struct Range {
-		int start, end;
-		__device__ Range(int s = 0, int e = 0) {
+		sort_t start, end;
+		__device__ Range(sort_t s = 0, sort_t e = 0) {
 			start = s, end = e;
 		}
 	};
@@ -51,13 +54,13 @@ namespace GNNS {
 		b = temp;
 	}
 
-	__device__ void table_sort(float * a, int * b, int size) {
+	__device__ void table_sort(float * a, int * b, sort_t size) {
 		if (size == 0)
 			return;
 
 		Range * r = new Range[size];
-		int p = 0;
-		int left, right;
+		sort_t p = 0;
+		sort_t left, right;
 		float mid;
 		r[p++] = Range(0, size - 1);
 		while (p) {
@@ -88,23 +91,26 @@ namespace GNNS {
 	}
 
 	__global__ void
-	kNN(int * k, float * data, float * dist, int * index, int * result, int * ri) {
-		int vertex_1 = *ri * 100 + gridDim.x * blockIdx.x + blockIdx.y;
+	kNN(int * k, float * data, float * dist, int * index, int * result, int * ri,
+		int * vertices_per_block, int * blocks_per_iteration, int * pairs_per_threads, 
+		int * data_num, int * data_dim) {
+
+		int vertex_1 = *ri * *blocks_per_iteration * *vertices_per_block + blockIdx.x;
 		int vertex_2;
 		int i;
 
-		for (i = 0; i < 100;  i++) {
-			vertex_2 = (threadIdx.x * blockDim.x + threadIdx.y) * 100 + i;
-			index[vertex_1 * 10000 + vertex_2] = vertex_2;
-			dist[vertex_1 * 10000 + vertex_2] =
-				Euclidean(&data[128 * vertex_1], &data[128 * vertex_2], 128);
+		for (i = 0; i < *pairs_per_threads;  i++) {
+			vertex_2 = threadIdx.x * *pairs_per_threads + i;
+			index[vertex_1 * *data_num + vertex_2] = vertex_2;
+			dist[vertex_1 * *data_num + vertex_2] =
+				Euclidean(&data[*data_dim * vertex_1], &data[*data_dim * vertex_2], *data_dim);
 		}
 
 		__syncthreads();
-		if (threadIdx.x == 0 && threadIdx.y == 0) {
-			table_sort(&dist[vertex_1 * 10000], &index[vertex_1 * 10000], 10000);
+		if (threadIdx.x == 0) {
+			table_sort(&dist[vertex_1 * *data_num], &index[vertex_1 * *data_num], *data_num);
 			for (i = 1; i <= *k; i++) {
-				result[vertex_1*(*k) + i - 1] = index[vertex_1 * 10000 + i];
+				result[vertex_1*(*k) + i - 1] = index[vertex_1 * *data_num + i];
 			}
 		}
 	}
@@ -120,14 +126,26 @@ namespace GNNS {
 		result->dim = k;
 		result->num = base.num;
 		result->data = new int[result->dim * result->num];
-
 		start = clock();
+		
+
+		const int pairs_per_thread = 100;
+		int threads_per_vertex = base.num / pairs_per_thread;
+		const int vertices_per_block = 1;
+		int blocks = base.num / vertices_per_block;
+		const int parallel = 100;				// blocks per iteration
+
 		float * dev_base;
 		int * dev_result;
 		int * dev_k;
 		float * dev_dist;
 		int * dev_index;
 		int * dev_i;
+		int * dev_v_p_b;
+		int * dev_b_p_i;
+		int * dev_p_p_t;
+		int * dev_data_num;
+		int * dev_data_dim;
 
 		cudaMalloc((void**)&dev_base, base.num * base.dim * sizeof(float));
 		cudaMalloc((void**)&dev_result, k * base.num * sizeof(int));
@@ -135,31 +153,43 @@ namespace GNNS {
 		cudaMalloc((void**)&dev_dist, sizeof(float) * base.num * base.num);
 		cudaMalloc((void**)&dev_index, sizeof(int) * base.num * base.num);
 		cudaMalloc((void**)&dev_i, sizeof(int));
+		cudaMalloc((void**)&dev_v_p_b, sizeof(int));
+		cudaMalloc((void**)&dev_b_p_i, sizeof(int));
+		cudaMalloc((void**)&dev_p_p_t, sizeof(int));
+		cudaMalloc((void**)&dev_data_num, sizeof(int));
+		cudaMalloc((void**)&dev_data_dim, sizeof(int));
+
 		cudaMemcpy(dev_base, base.data, base.num * base.dim * sizeof(float), cudaMemcpyHostToDevice);
 		cudaMemcpy(dev_k, &k, sizeof(unsigned), cudaMemcpyHostToDevice);
-
-		dim3 blockDim(10, 10);
-		dim3 threadDim(10, 10);
-		for (int i = 0; i < 100; i++) {
+		cudaMemcpy(dev_v_p_b, &vertices_per_block, sizeof(int), cudaMemcpyHostToDevice);
+		cudaMemcpy(dev_b_p_i, &parallel, sizeof(int), cudaMemcpyHostToDevice);
+		cudaMemcpy(dev_p_p_t, &pairs_per_thread, sizeof(int), cudaMemcpyHostToDevice);
+		cudaMemcpy(dev_data_dim, &base.dim, sizeof(int), cudaMemcpyHostToDevice);
+		cudaMemcpy(dev_data_num, &base.num, sizeof(int), cudaMemcpyHostToDevice);
+		
+		for (int i = 0; i < blocks / parallel; i++) {
 			cudaMemcpy(dev_i, &i, sizeof(int), cudaMemcpyHostToDevice);
-			kNN<<<blockDim,threadDim>>>(dev_k, dev_base, dev_dist, dev_index, dev_result, dev_i);
+			kNN<<<parallel, threads_per_vertex>>>(dev_k, dev_base, dev_dist, dev_index, 
+				dev_result, dev_i, dev_v_p_b, dev_b_p_i, dev_p_p_t, dev_data_num, dev_data_dim);
 			cudaDeviceSynchronize();
 		}
-
 		cudaMemcpy(result->data, dev_result, k * base.num * sizeof(int), cudaMemcpyDeviceToHost);
-		/*cudaCheckErrors("cudamemcpy or cuda kernel fail");*/
+
 		cudaFree(dev_base);
 		cudaFree(dev_result);
 		cudaFree(dev_k);
 		cudaFree(dev_dist);
 		cudaFree(dev_index);
+		cudaFree(dev_v_p_b);
+		cudaFree(dev_b_p_i);
+		cudaFree(dev_p_p_t);
+		cudaFree(dev_data_num);
+		cudaFree(dev_data_dim);
 
 		end = clock();
-		
 		std::cout << std::endl << "Time for building the graph: "
 			<< (double)(end - start) / CLOCKS_PER_SEC << " second" << std::endl;
 		write_file<int>(path, *result);
-
 		return *result;
 	}
 
@@ -177,16 +207,15 @@ namespace GNNS {
 		float min_dist;
 
 		int count;
-		int iter;
+		sort_t iter;
 		int temp;
 
 		int query_offset = *base_dim * parallel;
-		int dist_offset = int(*e * *r * *s * parallel);
+		sort_t dist_offset = sort_t(*e) * *r * *s * parallel;
 		int result_offset = *k * parallel;
 
 		curandState_t state;
 		curand_init(start, parallel, *ri, &state);
-		/*curand_init((*ri+1) * (start+1) * (parallel+1), 0, 0, &state);*/
 		int no = curand(&state) % *base_num;
 
 		int i, j;
@@ -194,9 +223,9 @@ namespace GNNS {
 			for (j = 0; j < *e; j++) {
 				temp_no = graph[*k_ * no + j];
 				temp_dist = Euclidean(query + query_offset,
-					&base[temp_no * *base_dim], *base_dim);
-				index[dist_offset + *s * *e * start + i * *e + j] = temp_no;
-				dist[dist_offset + *s * *e * start + i * *e + j] = temp_dist;
+					&base[base_t(temp_no) * *base_dim], *base_dim);
+				index[dist_offset + sort_t(*s) * *e * start + i * *e + j] = temp_no;
+				dist[dist_offset + sort_t(*s) * *e * start + i * *e + j] = temp_dist;
 
 				if (j == 0) {
 					min_no = temp_no;
@@ -208,7 +237,7 @@ namespace GNNS {
 					min_no = temp_no;
 				}
 			}
-			no = temp_no;
+			no = min_no;
 		}
 
 		__syncthreads();
@@ -217,8 +246,8 @@ namespace GNNS {
 			iter = dist_offset;
 			count = result_offset;
 
-			table_sort(dist + dist_offset, index + dist_offset, *e * *r * *s);
-			while (iter != dist_offset + *e * *r * *s) {
+			table_sort(dist + dist_offset, index + dist_offset, sort_t(*e) * *r * *s);
+			while (iter != dist_offset + sort_t(*e) * *r * *s) {
 				if (count == result_offset) {
 					temp = index[iter];
 					result[count] = temp;
@@ -266,17 +295,11 @@ namespace GNNS {
 		int * dev_base_dim;
 
 		cudaMalloc((void**)&dev_base, base.num * base.dim * sizeof(float));
-		cudaCheckErrors("Fail to malloc dev_base!");
 		cudaMalloc((void**)&dev_query, parallel * query.dim * sizeof(float));
-		cudaCheckErrors("Fail to malloc dev_query!");
 		cudaMalloc((void**)&dev_dist, parallel * e * s * r * sizeof(float));
-		cudaCheckErrors("Fail to malloc dev_dist!");
 		cudaMalloc((void**)&dev_graph, graph.num * graph.dim * sizeof(int));
-		cudaCheckErrors("Fail to malloc dev_graph!");
 		cudaMalloc((void**)&dev_result, parallel * result->dim * sizeof(int));
-		cudaCheckErrors("Fail to malloc dev_result!");
 		cudaMalloc((void**)&dev_index, parallel * e * s * r * sizeof(int));
-		cudaCheckErrors("Fail to malloc dev_index!");
 		cudaMalloc((void**)&dev_i, sizeof(int));
 		cudaMalloc((void**)&dev_e, sizeof(int));
 		cudaMalloc((void**)&dev_s, sizeof(int));
@@ -287,23 +310,14 @@ namespace GNNS {
 		cudaMalloc((void**)&dev_base_dim, sizeof(int));
 
 		cudaMemcpy(dev_base, base.data, base.num * base.dim * sizeof(float), cudaMemcpyHostToDevice);
-		cudaCheckErrors("Fail to memcpy dev_base!");
 		cudaMemcpy(dev_graph, graph.data, graph.num * graph.dim * sizeof(int), cudaMemcpyHostToDevice);
-		cudaCheckErrors("Fail to memcpy dev_graph!");
 		cudaMemcpy(dev_e, &e, sizeof(int), cudaMemcpyHostToDevice);
-		cudaCheckErrors("Fail to memcpy dev_e!");
 		cudaMemcpy(dev_s, &s, sizeof(int), cudaMemcpyHostToDevice);
-		cudaCheckErrors("Fail to memcpy dev_s!");
 		cudaMemcpy(dev_k, &k, sizeof(int), cudaMemcpyHostToDevice);
-		cudaCheckErrors("Fail to memcpy dev_k!");
 		cudaMemcpy(dev_k_, &k_, sizeof(int), cudaMemcpyHostToDevice);
-		cudaCheckErrors("Fail to memcpy dev_k_!");
 		cudaMemcpy(dev_r, &r, sizeof(int), cudaMemcpyHostToDevice);
-		cudaCheckErrors("Fail to memcpy dev_r!");
 		cudaMemcpy(dev_base_num, &(base.num), sizeof(int), cudaMemcpyHostToDevice);
-		cudaCheckErrors("Fail to memcpy dev_base_num!");
 		cudaMemcpy(dev_base_dim, &(base.dim), sizeof(int), cudaMemcpyHostToDevice);
-		cudaCheckErrors("Fail to memcpy dev_base_dim!");
 
 		for (int i = 0; i < query.num / parallel; i++) {
 			cudaMemcpy(dev_i, &i, sizeof(int), cudaMemcpyHostToDevice);
