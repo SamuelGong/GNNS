@@ -37,13 +37,13 @@ Number of expansions (E < k):1000
 ``` 
 where the meaning of the parameters accord with the ones specified in the article.
 
-+ Running on some GPUs will fails with a small TDR delay. You might need to change the delay of your device. Learn more in the [user guide](http://docs.nvidia.com/nsight-visual-studio-edition/Nsight_Visual_Studio_Edition_User_Guide.htm#Timeout_Detection_Recovery.htm%3FTocPath%3DReference%7C_____2)
++ Running on some GPUs will fails with a small TDR delay. You might need to change the delay of your device. Learn more in the [user guide](http://docs.nvidia.com/nsight-visual-studio-edition/Nsight_Visual_Studio_Edition_User_Guide.htm#Timeout_Detection_Recovery.htm%3FTocPath%3DReference%7C_____2).
 
 + If everything goes well, running results may look like
-<p><img src="screenshot/result_sample_2.png" width="80%"  /></p>
+<p><img src="screenshot/result_sample_2.png" width="40%"  /></p>
 
 if you run the project for the first time and have to construct a kNN graph from scratch, or like
-<p><img src="screenshot/result_sample.png" width="80%"  /></p>
+<p><img src="screenshot/result_sample.png" width="40%"  /></p>
 
 if you have already constructed a kNN graph in previous attempts.
 
